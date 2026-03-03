@@ -12,8 +12,16 @@ const SectionTitle: React.FC<React.PropsWithChildren<{}>> = ({ children }) => (
   </h3>
 );
 
-export const BiodataForm: React.FC = () => {
-  const { register, handleSubmit, watch, setValue, trigger, formState: { errors, isSubmitting } } = useForm<EmployeeData>();
+interface BiodataFormProps {
+  initialData?: EmployeeData;
+  onSuccess?: (data: EmployeeData) => void;
+  isEditMode?: boolean;
+}
+
+export const BiodataForm: React.FC<BiodataFormProps> = ({ initialData, onSuccess, isEditMode = false }) => {
+  const { register, handleSubmit, watch, setValue, trigger, formState: { errors, isSubmitting } } = useForm<EmployeeData>({
+    defaultValues: initialData
+  });
   const [step, setStep] = useState(1);
   const [success, setSuccess] = useState(false);
   const [submittedData, setSubmittedData] = useState<EmployeeData | null>(null);
@@ -59,13 +67,18 @@ export const BiodataForm: React.FC = () => {
     try {
       const finalData = {
         ...data,
-        id: `OX-${Date.now().toString().slice(-6)}`,
-        submissionDate: new Date().toISOString()
+        id: initialData?.id || `OX-${Date.now().toString().slice(-6)}`,
+        submissionDate: initialData?.submissionDate || new Date().toISOString()
       };
       
       // Save to "Database" (Local Storage)
       saveEmployee(finalData);
       setSubmittedData(finalData);
+      
+      if (isEditMode && onSuccess) {
+        onSuccess(finalData);
+        return;
+      }
       
       // Generate PDF
       generateBiodataPDF(finalData);
@@ -141,8 +154,12 @@ export const BiodataForm: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-serif text-ox-gold mb-2">Employee Biodata</h2>
-        <p className="text-gray-500 uppercase tracking-widest text-sm">Official Record Form</p>
+        <h2 className="text-3xl md:text-4xl font-serif text-ox-gold mb-2">
+          {isEditMode ? 'Edit Staff Record' : 'Employee Biodata'}
+        </h2>
+        <p className="text-gray-500 uppercase tracking-widest text-sm">
+          {isEditMode ? `Editing: ${initialData?.fullName}` : 'Official Record Form'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit, onError)} className="bg-ox-card p-8 rounded-xl border border-ox-gold/20 shadow-2xl">
@@ -268,7 +285,7 @@ export const BiodataForm: React.FC = () => {
               disabled={isSubmitting}
               className="bg-ox-gold text-ox-black px-8 py-3 rounded font-bold hover:bg-yellow-500 transition shadow-lg shadow-ox-gold/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Processing...' : <><Save size={18} /> Submit & Download PDF</>}
+              {isSubmitting ? 'Processing...' : <><Save size={18} /> {isEditMode ? 'Save Changes' : 'Submit & Download PDF'}</>}
             </button>
           </div>
           

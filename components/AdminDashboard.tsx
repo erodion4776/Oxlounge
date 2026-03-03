@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Download, Trash2, Printer, Lock, MessageCircle, UploadCloud, FileWarning, FileText } from 'lucide-react';
+import { Search, Download, Trash2, Printer, Lock, MessageCircle, UploadCloud, FileWarning, FileText, X } from 'lucide-react';
 import { getEmployees, deleteEmployee, saveEmployee } from '../services/storageService';
 import { generateBiodataPDF, generateOfferLetterPDF } from '../services/pdfService';
+import { BiodataForm } from './BiodataForm';
 import { EmployeeData } from '../types';
 
 export const AdminDashboard: React.FC = () => {
@@ -9,6 +10,7 @@ export const AdminDashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -207,13 +209,19 @@ export const AdminDashboard: React.FC = () => {
               ) : filtered.map((emp) => (
                 <tr key={emp.id} className="hover:bg-ox-input/50 transition-colors">
                   <td className="p-4 font-mono text-xs text-gray-500">{emp.id}</td>
-                  <td className="p-4 text-white font-medium flex items-center gap-3">
-                    {emp.passportPhoto ? (
-                      <img src={emp.passportPhoto} className="w-10 h-10 rounded-full object-cover border border-ox-gold" alt="" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-ox-input border border-gray-700"></div>
-                    )}
-                    {emp.fullName}
+                  <td className="p-4 text-white font-medium">
+                    <button 
+                      onClick={() => setEditingEmployee(emp)}
+                      className="flex items-center gap-3 hover:text-ox-gold transition-colors group text-left"
+                      title="Click to edit staff record"
+                    >
+                      {emp.passportPhoto ? (
+                        <img src={emp.passportPhoto} className="w-10 h-10 rounded-full object-cover border border-ox-gold group-hover:scale-110 transition-transform" alt="" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-ox-input border border-gray-700 group-hover:border-ox-gold transition-colors"></div>
+                      )}
+                      <span className="border-b border-transparent group-hover:border-ox-gold/50">{emp.fullName}</span>
+                    </button>
                   </td>
                   <td className="p-4">
                     <span className="block text-gray-300 font-semibold">{emp.position}</span>
@@ -260,6 +268,32 @@ export const AdminDashboard: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingEmployee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-ox-dark w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-ox-gold/30 shadow-2xl relative">
+            <button 
+              onClick={() => setEditingEmployee(null)}
+              className="absolute top-6 right-6 text-gray-500 hover:text-white z-10 bg-ox-card p-2 rounded-full border border-gray-800"
+            >
+              <X size={24} />
+            </button>
+            
+            <div className="p-8">
+              <BiodataForm 
+                initialData={editingEmployee} 
+                isEditMode={true} 
+                onSuccess={(updated) => {
+                  setEmployees(getEmployees());
+                  setEditingEmployee(null);
+                  alert(`Successfully updated record for ${updated.fullName}`);
+                }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
